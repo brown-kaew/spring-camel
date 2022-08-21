@@ -1,0 +1,8 @@
+server:
+  port: 8080
+  servlet:
+    contextPath: /api
+    encoding:
+      charset: UTF-8
+      force-response: true
+  shutdown: graceful
