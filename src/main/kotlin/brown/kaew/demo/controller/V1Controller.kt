@@ -26,16 +26,14 @@ class V1Controller(
     @GetMapping("person")
     fun person(): Person {
         //http://localhost:8080/api/v1/person
-        val person = Person("Kaew", "red", 9)
-        return producerTemplate.requestBody(AppRouteBuilder.PRODUCE_PERSON_ROUTE, person) as Person
+        return producerTemplate.requestBody(AppRouteBuilder.PRODUCE_PERSON_ROUTE, Person()) as Person
     }
 
     @GetMapping("person-bg")
     fun personBg(): String {
         //http://localhost:8080/api/v1/person-bg
-        val person = Person("Kaew", "red", 9)
-        var result = producerTemplate.asyncRequestBody(AppRouteBuilder.PRODUCE_PERSON_BACKGROUND_ROUTE, person)
+        producerTemplate.asyncRequestBody(AppRouteBuilder.PRODUCE_PERSON_BACKGROUND_ROUTE, Person())
         log.info("Success")
-        return "ok"
+        return "Success"
     }
 }
