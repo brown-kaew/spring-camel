@@ -1,6 +1,8 @@
 package brown.kaew.demo.router
 
+import brown.kaew.demo.model.Person
 import org.apache.camel.builder.RouteBuilder
+import org.apache.camel.model.dataformat.AvroLibrary
 import org.springframework.stereotype.Component
 
 @Component
@@ -12,7 +14,28 @@ class AppRouteBuilder : RouteBuilder() {
     }
 
     override fun configure() {
+
         from(PRODUCE_PERSON_ROUTE)
+            .process {
+                val person = it.getIn().getBody(Person::class.java)
+                person.favoriteNumber *= 2
+            }
+            .process { log.info("before marshal : {}", it.getIn().body) }
+//            .marshal().json(JsonLibrary.Jackson, Person::class.java)
+            .marshal().avro(AvroLibrary.Jackson, Person::class.java)
+            .process { log.info("after marshal : {}", it.getIn().body) }
+            .to(CONSUME_PERSON_ROUTE)
+
+        from(CONSUME_PERSON_ROUTE)
+            .process { log.info("before unmarshal : {}", it.getIn().body) }
+//            .unmarshal().json(JsonLibrary.Jackson, Person::class.java)
+            .unmarshal().avro(AvroLibrary.Jackson, Person::class.java)
+            .process {
+                val person = it.getIn().getBody(Person::class.java)
+                person.name += "-Unmarshal"
+                person.favoriteNumber /= 3
+            }
+            .process { log.info("after unmarshal : {}", it.getIn().body) }
             .to("log:info")
     }
 
