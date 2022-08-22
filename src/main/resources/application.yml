@@ -3,3 +3,19 @@ server:
   servlet:
     contextPath: /api
   shutdown: graceful
+
+camel:
+  component:
+    rabbitmq:
+      hostname: localhost
+      port-number: 5672
+      username: guest
+      password: guest
+      vhost: /
+      skip-exchange-declare: true
+      auto-delete: false
+      guaranteed-deliveries: true
+      automatic-recovery-enabled: true
+      publisher-acknowledgements-timeout: 10000
+      requested-heartbeat: 20
+      channel-rpc-timeout: 30000

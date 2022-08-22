@@ -3,6 +3,8 @@ package brown.kaew.demo.controller
 import brown.kaew.demo.model.Person
 import brown.kaew.demo.router.AppRouteBuilder
 import org.apache.camel.ProducerTemplate
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 class V1Controller(
     val producerTemplate: ProducerTemplate,
 ) {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     @GetMapping("hello")
     fun hello(@RequestParam name: String): String {
@@ -25,5 +28,14 @@ class V1Controller(
         //http://localhost:8080/api/v1/person
         val person = Person("Kaew", "red", 9)
         return producerTemplate.requestBody(AppRouteBuilder.PRODUCE_PERSON_ROUTE, person) as Person
+    }
+
+    @GetMapping("person-bg")
+    fun personBg(): String {
+        //http://localhost:8080/api/v1/person-bg
+        val person = Person("Kaew", "red", 9)
+        var result = producerTemplate.asyncRequestBody(AppRouteBuilder.PRODUCE_PERSON_BACKGROUND_ROUTE, person)
+        log.info("Success")
+        return "ok"
     }
 }

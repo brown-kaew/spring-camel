@@ -10,7 +10,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>brown.kaew</groupId>
-	<artifactId>demo</artifactId>
+	<artifactId>spring-camel</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>spring-camel</name>
 	<description>Demo project for Spring Boot</description>
@@ -33,6 +33,12 @@
 			<groupId>org.apache.camel.springboot</groupId>
 			<artifactId>camel-spring-boot-starter</artifactId>
 			<version>${camel.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-spring-rabbitmq</artifactId>
+			<version>${camel.version}</version>
+			<!-- use the same version as your Camel core version -->
 		</dependency>
 		<dependency>
 			<groupId>org.apache.camel.springboot</groupId>
