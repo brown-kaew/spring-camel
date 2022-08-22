@@ -4,6 +4,7 @@ import brown.kaew.demo.model.Person
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.model.dataformat.AvroLibrary
 import org.springframework.stereotype.Component
+import kotlin.math.roundToInt
 
 @Component
 class AppRouteBuilder : RouteBuilder() {
@@ -16,10 +17,6 @@ class AppRouteBuilder : RouteBuilder() {
     override fun configure() {
 
         from(PRODUCE_PERSON_ROUTE)
-            .process {
-                val person = it.getIn().getBody(Person::class.java)
-                person.favoriteNumber *= 2
-            }
             .process { log.info("before marshal : {}", it.getIn().body) }
 //            .marshal().json(JsonLibrary.Jackson, Person::class.java)
             .marshal().avro(AvroLibrary.Jackson, Person::class.java)
@@ -33,7 +30,7 @@ class AppRouteBuilder : RouteBuilder() {
             .process {
                 val person = it.getIn().getBody(Person::class.java)
                 person.name += "-Unmarshal"
-                person.favoriteNumber /= 3
+                person.favoriteNumber = (Math.random() * 10).roundToInt()
             }
             .process { log.info("after unmarshal : {}", it.getIn().body) }
             .to("log:info")
