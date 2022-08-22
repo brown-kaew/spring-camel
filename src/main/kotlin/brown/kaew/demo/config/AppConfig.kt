@@ -1,6 +1,7 @@
 package brown.kaew.demo.config
 
 import brown.kaew.demo.model.Person
+import brown.kaew.demo.router.AppRouteBuilder
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.avro.AvroFactory
@@ -31,12 +32,13 @@ class AppConfig {
     @Bean
     fun schemaResolver(avroMapper: AvroMapper): SchemaResolver {
         return SchemaResolver {
-            val aClass = it.getIn().body.javaClass
             try {
-//                avroMapper.schemaFor(aClass)
-                avroMapper.schemaFor(Person::class.java) //Fixed type
+                val aClass = it.getIn().getHeader(AppRouteBuilder.RESOLVER_CLASS, Class::class.java)
+                avroMapper.schemaFor(aClass)
             } catch (e: JsonMappingException) {
                 throw IllegalArgumentException("No schema found", e)
+            } catch (ex: Exception) {
+                throw Exception("Error resolve schema", ex)
             }
         }
     }
