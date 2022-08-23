@@ -34,7 +34,11 @@ class AppConfig {
         return SchemaResolver {
             try {
                 val aClass = it.getIn().getHeader(AppRouteBuilder.RESOLVER_CLASS, Class::class.java)
-                avroMapper.schemaFor(aClass)
+                if (aClass != null) {
+                    avroMapper.schemaFor(aClass)
+                } else {
+                    null
+                }
             } catch (e: JsonMappingException) {
                 throw IllegalArgumentException("No schema found", e)
             } catch (ex: Exception) {
