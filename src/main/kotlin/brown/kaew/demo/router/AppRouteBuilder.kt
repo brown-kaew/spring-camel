@@ -15,7 +15,6 @@ class AppRouteBuilder : RouteBuilder() {
         const val PRODUCE_PERSON_BACKGROUND_ROUTE = "direct:produce.person.bg"
         const val CONSUME_PERSON_ROUTE = "direct:consume.person"
         const val RABBIT_ROUTE = "spring-rabbitmq:brown.kaew?routingKey=brown.kaew.avro&queues=brown.kaew.avro.test"
-        const val RESOLVER_CLASS = "resolver-class"
     }
 
     override fun configure() {
@@ -35,7 +34,7 @@ class AppRouteBuilder : RouteBuilder() {
             .to(ExchangePattern.InOnly, RABBIT_ROUTE)
 
         from(RABBIT_ROUTE)
-            .process { log.info("rabbitMQ consume : {}", it.getIn().body) }
+            .process { log.info("rabbitMQ consume msg size: {}", (it.getIn().body as ByteArray).size) }
             .to(CONSUME_PERSON_ROUTE)
 
         from(PRODUCE_PERSON_ROUTE)
