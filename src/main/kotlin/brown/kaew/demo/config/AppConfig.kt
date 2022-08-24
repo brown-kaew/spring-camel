@@ -1,45 +1,42 @@
 package brown.kaew.demo.config
 
 import brown.kaew.demo.model.Person
-import brown.kaew.demo.router.AppRouteBuilder
-import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.avro.AvroFactory
 import com.fasterxml.jackson.dataformat.avro.AvroMapper
 import com.fasterxml.jackson.dataformat.avro.schema.AvroSchemaGenerator
-import com.sun.istack.logging.Logger
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.apache.camel.component.jackson.SchemaResolver
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
 class AppConfig {
 
-    val log = Logger.getLogger(AppConfig::class.java)
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     @Bean
     fun objectMapper(): ObjectMapper {
-        return ObjectMapper()
+        val objectMapper = ObjectMapper()
+        objectMapper.registerKotlinModule()
+        return objectMapper
     }
 
     @Bean
     fun avroMapper(): AvroMapper {
-        val avroMapper = AvroMapper.builder(AvroFactory()).build()
-        avroMapper.acceptJsonFormatVisitor(Person::class.java, AvroSchemaGenerator())
+        val avroMapper = AvroMapper.builder().build()
+        val avroSchemaGenerator = AvroSchemaGenerator()
+        avroMapper.registerKotlinModule()
+        avroMapper.acceptJsonFormatVisitor(Person::class.java, avroSchemaGenerator)
+        log.info("Schema\n {}", avroSchemaGenerator.avroSchema.toString(true))
         return avroMapper
     }
 
     @Bean
     fun schemaResolver(avroMapper: AvroMapper): SchemaResolver {
         return SchemaResolver {
-            try {
-                val aClass = it.getIn().getHeader(AppRouteBuilder.RESOLVER_CLASS, Class::class.java)
-                avroMapper.schemaFor(aClass)
-            } catch (e: JsonMappingException) {
-                throw IllegalArgumentException("No schema found", e)
-            } catch (ex: Exception) {
-                throw Exception("Error resolve schema", ex)
-            }
+            avroMapper.schemaFor(Person::class.java)
         }
     }
 

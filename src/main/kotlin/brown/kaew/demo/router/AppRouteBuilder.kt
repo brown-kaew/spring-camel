@@ -15,7 +15,6 @@ class AppRouteBuilder : RouteBuilder() {
         const val PRODUCE_PERSON_BACKGROUND_ROUTE = "direct:produce.person.bg"
         const val CONSUME_PERSON_ROUTE = "direct:consume.person"
         const val RABBIT_ROUTE = "spring-rabbitmq:brown.kaew?routingKey=brown.kaew.avro&queues=brown.kaew.avro.test"
-        const val RESOLVER_CLASS = "resolver-class"
     }
 
     override fun configure() {
@@ -30,26 +29,22 @@ class AppRouteBuilder : RouteBuilder() {
                 }
             }
             .process { log.info("before marshal : {}", it.getIn().body) }
-//            .marshal().json(JsonLibrary.Jackson, Person::class.java)
-            .setHeader(RESOLVER_CLASS) { Person::class.java }
             .marshal().avro(AvroLibrary.Jackson, Person::class.java)
             .process { log.info("after marshal : {}", it.getIn().body) }
             .to(ExchangePattern.InOnly, RABBIT_ROUTE)
 
         from(RABBIT_ROUTE)
-            .process { log.info("rabbitMQ consume : {}", it.getIn().body) }
+            .process { log.info("rabbitMQ consume msg size : {}", (it.getIn().body as ByteArray).size) }
             .to(CONSUME_PERSON_ROUTE)
 
         from(PRODUCE_PERSON_ROUTE)
             .process { log.info("before marshal : {}", it.getIn().body) }
-//            .marshal().json(JsonLibrary.Jackson, Person::class.java)
             .marshal().avro(AvroLibrary.Jackson, Person::class.java)
             .process { log.info("after marshal : {}", it.getIn().body) }
             .to(CONSUME_PERSON_ROUTE)
 
         from(CONSUME_PERSON_ROUTE)
             .process { log.info("before unmarshal : {}", it.getIn().body) }
-//            .unmarshal().json(JsonLibrary.Jackson, Person::class.java)
             .unmarshal().avro(AvroLibrary.Jackson, Person::class.java)
             .process { log.info("after unmarshal : {}", it.getIn().body) }
             .to("log:info")
