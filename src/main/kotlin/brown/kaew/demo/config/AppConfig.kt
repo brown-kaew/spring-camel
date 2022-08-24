@@ -1,9 +1,10 @@
 package brown.kaew.demo.config
 
 import brown.kaew.demo.model.Person
+import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.avro.AvroMapper
-import com.fasterxml.jackson.dataformat.avro.schema.AvroSchemaGenerator
+import com.fasterxml.jackson.dataformat.protobuf.ProtobufMapper
+import com.fasterxml.jackson.dataformat.protobuf.schemagen.ProtobufSchemaGenerator
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.apache.camel.component.jackson.SchemaResolver
 import org.slf4j.Logger
@@ -24,19 +25,20 @@ class AppConfig {
     }
 
     @Bean
-    fun avroMapper(): AvroMapper {
-        val avroMapper = AvroMapper.builder().build()
-        val avroSchemaGenerator = AvroSchemaGenerator()
-        avroMapper.registerKotlinModule()
-        avroMapper.acceptJsonFormatVisitor(Person::class.java, avroSchemaGenerator)
-        log.info("Schema\n {}", avroSchemaGenerator.avroSchema.toString(true))
-        return avroMapper
+    fun protobufMapper(): ProtobufMapper {
+        val protobufMapper = ProtobufMapper.builder().build()
+        val protobufSchemaGenerator = ProtobufSchemaGenerator()
+        protobufMapper.registerKotlinModule()
+        protobufMapper.acceptJsonFormatVisitor(Person::class.java, protobufSchemaGenerator)
+        protobufMapper.enable(JsonParser.Feature.IGNORE_UNDEFINED)
+        log.info("Schema\n {}", protobufSchemaGenerator.generatedSchema)
+        return protobufMapper
     }
 
     @Bean
-    fun schemaResolver(avroMapper: AvroMapper): SchemaResolver {
+    fun schemaResolver(protobufMapper: ProtobufMapper): SchemaResolver {
         return SchemaResolver {
-            avroMapper.schemaFor(Person::class.java)
+            protobufMapper.generateSchemaFor(Person::class.java)
         }
     }
 

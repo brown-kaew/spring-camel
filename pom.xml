@@ -42,7 +42,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.apache.camel.springboot</groupId>
-			<artifactId>camel-jackson-avro-starter</artifactId>
+			<artifactId>camel-jackson-protobuf-starter</artifactId>
 			<version>${camel.version}</version>
 			<!-- use the same version as your Camel core version -->
 		</dependency>
