@@ -38,6 +38,14 @@ class AppRouteBuilder : RouteBuilder() {
             .to(CONSUME_PERSON_ROUTE)
 
         from(PRODUCE_PERSON_ROUTE)
+            .process {
+                val person = it.getIn().getBody(Person::class.java)
+                person.apply {
+                    name = "Kaew"
+                    favoriteColor = "red"
+                    favoriteNumber = (Math.random() * 100).roundToInt()
+                }
+            }
             .process { log.info("before marshal : {}", it.getIn().body) }
             .marshal().avro(AvroLibrary.Jackson, Person::class.java)
             .process { log.info("after marshal : {}", it.getIn().body) }
