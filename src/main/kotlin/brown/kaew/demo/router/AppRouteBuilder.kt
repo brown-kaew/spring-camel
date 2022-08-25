@@ -14,7 +14,7 @@ class AppRouteBuilder : RouteBuilder() {
         const val PRODUCE_PERSON_ROUTE = "direct:produce.person"
         const val PRODUCE_PERSON_BACKGROUND_ROUTE = "direct:produce.person.bg"
         const val CONSUME_PERSON_ROUTE = "direct:consume.person"
-        const val RABBIT_ROUTE = "spring-rabbitmq:brown.kaew?routingKey=brown.kaew.avro&queues=brown.kaew.avro.test"
+        const val RABBIT_ROUTE = "spring-rabbitmq:brown.kaew?routingKey=brown.kaew.avro&queues=brown.kaew.avro.test&autoDeclare=true"
     }
 
     override fun configure() {
