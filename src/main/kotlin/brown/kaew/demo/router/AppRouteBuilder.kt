@@ -1,14 +1,18 @@
 package brown.kaew.demo.router
 
 import brown.kaew.demo.model.Person
+import org.apache.avro.generic.GenericData
+import org.apache.avro.generic.GenericRecord
+import org.apache.avro.reflect.ReflectData
 import org.apache.camel.ExchangePattern
+import org.apache.camel.Processor
 import org.apache.camel.builder.RouteBuilder
-import org.apache.camel.model.dataformat.AvroLibrary
+import org.apache.camel.dataformat.avro.AvroDataFormat
 import org.springframework.stereotype.Component
 import kotlin.math.roundToInt
 
 @Component
-class AppRouteBuilder : RouteBuilder() {
+class AppRouteBuilder() : RouteBuilder() {
 
     companion object {
         const val PRODUCE_PERSON_ROUTE = "direct:produce.person"
@@ -18,6 +22,9 @@ class AppRouteBuilder : RouteBuilder() {
     }
 
     override fun configure() {
+        val schema = ReflectData.get().getSchema(Person::class.java)
+        log.info("Schema\n {}", schema)
+        val avroDataFormat = AvroDataFormat(schema)
 
         from(PRODUCE_PERSON_BACKGROUND_ROUTE)
             .process {
@@ -29,7 +36,16 @@ class AppRouteBuilder : RouteBuilder() {
                 }
             }
             .process { log.info("before marshal : {}", it.getIn().body) }
-            .marshal().avro(AvroLibrary.Jackson, Person::class.java)
+            .process {
+                val p = it.`in`.body as Person
+                val record = GenericData.Record(schema)
+                record.put("name", p.name)
+                record.put("favoriteColor", p.favoriteColor)
+                record.put("favoriteNumber", p.favoriteNumber)
+                record.put("favoriteFood", p.favoriteFood)
+                it.`in`.body = record
+            }
+            .marshal(avroDataFormat)
             .process { log.info("after marshal : {}", it.getIn().body) }
             .to(ExchangePattern.InOnly, RABBIT_ROUTE)
 
@@ -47,13 +63,23 @@ class AppRouteBuilder : RouteBuilder() {
                 }
             }
             .process { log.info("before marshal : {}", it.getIn().body) }
-            .marshal().avro(AvroLibrary.Jackson, Person::class.java)
+            .marshal(avroDataFormat)
             .process { log.info("after marshal : {}", it.getIn().body) }
             .to(CONSUME_PERSON_ROUTE)
 
         from(CONSUME_PERSON_ROUTE)
             .process { log.info("before unmarshal : {}", it.getIn().body) }
-            .unmarshal().avro(AvroLibrary.Jackson, Person::class.java)
+            .unmarshal(avroDataFormat)
+//            .process {
+//                val r = it.`in`.body as GenericData.Record
+//                val p = Person().apply {
+//                    name = r["name"] as String
+//                    favoriteColor = r["favoriteColor"] as String
+//                    favoriteNumber = r["favoriteNumber"] as Int
+//                    favoriteFood = r["favoriteNumber"] as String
+//                }
+//                it.`in`.body = p
+//            }
             .process { log.info("after unmarshal : {}", it.getIn().body) }
             .to("log:info")
     }
