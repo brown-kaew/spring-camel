@@ -12,7 +12,6 @@ server:
   shutdown: graceful
 
 spring:
-  cache.type: REDIS
   redis:
     host: localhost
     timeout: 15s
