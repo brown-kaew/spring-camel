@@ -1,6 +1,7 @@
 package brown.kaew.demo.config
 
 import brown.kaew.demo.model.Person
+import brown.kaew.demo.router.AppRouteBuilder
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.avro.AvroMapper
 import com.fasterxml.jackson.dataformat.avro.AvroSchema
@@ -12,7 +13,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.io.File
 
 @Configuration
 class AppConfig {
@@ -37,9 +37,19 @@ class AppConfig {
     }
 
     @Bean
-    fun schemaResolver(avroMapper: AvroMapper): SchemaResolver {
+    fun writerSchemaResolver(avroMapper: AvroMapper): SchemaResolver {
         return SchemaResolver {
-            val writerSchema = AvroSchema(Schema.Parser().parse(File("user.avsc"))) // old writer schema
+            val writerSchema = avroMapper.schemaFor(Person::class.java)
+            it.message.setHeader(AppRouteBuilder.AVRO_SCHEMA, writerSchema.avroSchema.toString())
+            writerSchema
+        }
+    }
+
+    @Bean
+    fun readerSchemaResolver(avroMapper: AvroMapper): SchemaResolver {
+        return SchemaResolver {
+            val schema = it.message.getHeader(AppRouteBuilder.AVRO_SCHEMA, String::class.java)
+            val writerSchema = AvroSchema(Schema.Parser().parse(schema)) // old writer schema
             val readerSchema = avroMapper.schemaFor(Person::class.java)
             writerSchema.withReaderSchema(readerSchema)
         }

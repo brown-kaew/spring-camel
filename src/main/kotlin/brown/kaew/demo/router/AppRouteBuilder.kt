@@ -15,6 +15,7 @@ class AppRouteBuilder : RouteBuilder() {
         const val PRODUCE_PERSON_BACKGROUND_ROUTE = "direct:produce.person.bg"
         const val CONSUME_PERSON_ROUTE = "direct:consume.person"
         const val RABBIT_ROUTE = "spring-rabbitmq:brown.kaew?routingKey=brown.kaew.avro&queues=brown.kaew.avro.test&autoDeclare=true"
+        const val AVRO_SCHEMA = "AvroSchema"
     }
 
     override fun configure() {
@@ -29,7 +30,7 @@ class AppRouteBuilder : RouteBuilder() {
                 }
             }
             .process { log.info("before marshal : {}", it.getIn().body) }
-            .marshal().avro(AvroLibrary.Jackson, Person::class.java)
+            .marshal().avro(AvroLibrary.Jackson, Person::class.java, "writerSchemaResolver")
             .process { log.info("after marshal : {}", it.getIn().body) }
             .to(ExchangePattern.InOnly, RABBIT_ROUTE)
 
@@ -47,13 +48,14 @@ class AppRouteBuilder : RouteBuilder() {
                 }
             }
             .process { log.info("before marshal : {}", it.getIn().body) }
-            .marshal().avro(AvroLibrary.Jackson, Person::class.java)
+            .marshal().avro(AvroLibrary.Jackson, Person::class.java, "writerSchemaResolver")
             .process { log.info("after marshal : {}", it.getIn().body) }
             .to(CONSUME_PERSON_ROUTE)
 
         from(CONSUME_PERSON_ROUTE)
             .process { log.info("before unmarshal : {}", it.getIn().body) }
-            .unmarshal().avro(AvroLibrary.Jackson, Person::class.java)
+            .process { log.info("headers : {}", it.getIn().headers) }
+            .unmarshal().avro(AvroLibrary.Jackson, Person::class.java, "readerSchemaResolver")
             .process { log.info("after unmarshal : {}", it.getIn().body) }
             .to("log:info")
     }
