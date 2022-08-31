@@ -1,8 +1,22 @@
+info:
+  build:
+    artifact: @project.artifactId@
+    name: @project.name@
+    description: @project.description@
+    version: @project.version@
+
 server:
   port: 8080
   servlet:
     contextPath: /api
   shutdown: graceful
+
+spring:
+  cache.type: REDIS
+  redis:
+    host: localhost
+    timeout: 15s
+    port: 6379
 
 camel:
   component:
