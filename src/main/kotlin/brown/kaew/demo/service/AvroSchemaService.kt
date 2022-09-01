@@ -27,8 +27,9 @@ class AvroSchemaService(
         if (schema == null) {
             val avroSchema = avroMapper.schemaFor(type)
             schema = avroSchema.avroSchema.toString()
-            bucket.set(schema) //store to redis
-            log.info("Store schema : {}", key)
+            if (bucket.trySet(schema)) { //store to redis
+                log.info("Store schema : {}", key)
+            }
             return avroSchema
         }
 
