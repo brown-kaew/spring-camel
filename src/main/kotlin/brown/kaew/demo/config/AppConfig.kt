@@ -16,7 +16,6 @@ import org.ehcache.core.config.DefaultConfiguration
 import org.ehcache.jsr107.EhcacheCachingProvider
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.EnableCaching
 import org.springframework.cache.jcache.JCacheCacheManager
@@ -27,10 +26,7 @@ import javax.cache.Caching
 
 @Configuration
 @EnableCaching
-class AppConfig(
-    @Value("\${info.build.version:none}")
-    private var version: String
-) {
+class AppConfig {
 
     val log: Logger = LoggerFactory.getLogger(this::class.java)
 
@@ -74,8 +70,8 @@ class AppConfig(
     @Bean
     fun writerSchemaResolver(avroSchemaService: AvroSchemaService): SchemaResolver {
         return SchemaResolver {
-            it.message.setHeader(AppRouteBuilder.APP_VERSION, version)
-            avroSchemaService.getSchema(version, Person::class.java)
+            it.message.setHeader(AppRouteBuilder.APP_VERSION, avroSchemaService.appVersion)
+            avroSchemaService.getWriterSchema(Person::class.java)
         }
     }
 
@@ -83,9 +79,7 @@ class AppConfig(
     fun readerSchemaResolver(avroSchemaService: AvroSchemaService): SchemaResolver {
         return SchemaResolver {
             val writerVersion = it.message.getHeader(AppRouteBuilder.APP_VERSION, String::class.java)
-            val writerSchema = avroSchemaService.getSchema(writerVersion, Person::class.java) // old writer schema
-            val readerSchema = avroSchemaService.getSchema(version, Person::class.java)
-            writerSchema.withReaderSchema(readerSchema)
+            avroSchemaService.getReaderSchema(writerVersion, Person::class.java)
         }
     }
 
