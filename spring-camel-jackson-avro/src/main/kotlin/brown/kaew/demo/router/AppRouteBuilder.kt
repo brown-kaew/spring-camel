@@ -16,7 +16,8 @@ class AppRouteBuilder : RouteBuilder() {
         const val CONSUME_PERSON_ROUTE = "direct:consume.person"
         const val RABBIT_ROUTE =
             "spring-rabbitmq:brown.kaew?routingKey=brown.kaew.avro&queues=brown.kaew.avro.test&autoDeclare=true"
-        const val APP_VERSION = "appVersion"
+        const val SCHEMA_ID = "schemaId"
+        const val SCHEMA_CLASS = "schemaClass"
     }
 
     override fun configure() {

@@ -3,6 +3,7 @@
 ## prerequisite
 - start rabbitMQ
 - start redis
+- start schema register server
 
 direct route
 http://localhost:8080/api/v1/person

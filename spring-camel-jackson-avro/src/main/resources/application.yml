@@ -12,6 +12,17 @@ server:
   shutdown: graceful
 
 spring:
+  cloud:
+    schemaRegistryClient:
+      endpoint: http://localhost:8990/
+      cached: true
+    stream:
+      bindings:
+        output:
+          contentType: application/*+avro
+#    schema:
+#      avro:
+#        dynamicSchemaGenerationEnabled: true
   redis:
     host: localhost
     timeout: 15s

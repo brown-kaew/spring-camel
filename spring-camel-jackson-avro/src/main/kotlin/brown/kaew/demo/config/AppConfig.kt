@@ -2,57 +2,26 @@ package brown.kaew.demo.config
 
 import brown.kaew.demo.model.Person
 import brown.kaew.demo.router.AppRouteBuilder
-import brown.kaew.demo.service.AvroSchemaService
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.avro.AvroMapper
+import com.fasterxml.jackson.dataformat.avro.AvroSchema
 import com.fasterxml.jackson.dataformat.avro.schema.AvroSchemaGenerator
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import org.apache.avro.Schema
 import org.apache.camel.component.jackson.SchemaResolver
-import org.ehcache.config.CacheConfiguration
-import org.ehcache.config.builders.CacheConfigurationBuilder
-import org.ehcache.config.builders.ExpiryPolicyBuilder
-import org.ehcache.config.builders.ResourcePoolsBuilder
-import org.ehcache.core.config.DefaultConfiguration
-import org.ehcache.jsr107.EhcacheCachingProvider
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.EnableCaching
-import org.springframework.cache.jcache.JCacheCacheManager
+import org.springframework.cloud.schema.registry.client.SchemaRegistryClient
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.time.Duration
-import javax.cache.Caching
 
 @Configuration
 @EnableCaching
-class AppConfig(
-    @Value("\${info.build.version:none}")
-    private var version: String
-) {
+class AppConfig {
 
-    val log: Logger = LoggerFactory.getLogger(this::class.java)
-
-    @Bean
-    fun ehcacheManager(): CacheManager {
-        val cacheConfiguration = CacheConfigurationBuilder
-            .newCacheConfigurationBuilder(
-                Any::class.java,
-                Any::class.java, ResourcePoolsBuilder.heap(1000)
-            )
-            .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofMinutes(10L)))
-            .build()
-        val cacheMap: MutableMap<String, CacheConfiguration<*, *>> = HashMap()
-        cacheMap["avroSchema"] = cacheConfiguration
-
-        val ehcacheCachingProvider =
-            Caching.getCachingProvider(EhcacheCachingProvider::class.java.name) as EhcacheCachingProvider
-        val defaultConfiguration = DefaultConfiguration(cacheMap, ehcacheCachingProvider.defaultClassLoader)
-        val cacheManager =
-            ehcacheCachingProvider.getCacheManager(ehcacheCachingProvider.defaultURI, defaultConfiguration)
-        return JCacheCacheManager(cacheManager)
-    }
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
+    private val versionMap = HashMap<String, Int>()
 
     @Bean
     fun objectMapper(): ObjectMapper {
@@ -62,30 +31,45 @@ class AppConfig(
     }
 
     @Bean
-    fun avroMapper(): AvroMapper {
+    fun avroMapper(schemaRegistryClient: SchemaRegistryClient): AvroMapper {
         val avroMapper = AvroMapper.builder().build()
-        val avroSchemaGenerator = AvroSchemaGenerator()
         avroMapper.registerKotlinModule()
-        avroMapper.acceptJsonFormatVisitor(Person::class.java, avroSchemaGenerator)
-        log.info("Schema\n{}", avroSchemaGenerator.avroSchema.toString(true))
+        registerAvroSchema(avroMapper, schemaRegistryClient, Person::class.java)
         return avroMapper
     }
 
+    private fun <T> registerAvroSchema(avroMapper: AvroMapper, schemaRegistryClient: SchemaRegistryClient, type: Class<T>) {
+        val avroSchemaGenerator = AvroSchemaGenerator()
+        avroMapper.acceptJsonFormatVisitor(type, avroSchemaGenerator)
+        val schema = avroSchemaGenerator.avroSchema
+        val response = schemaRegistryClient.register(type.name, "avro", schema.toString())
+        log.info("Schema\n{}", schema.toString(true))
+        log.info("{} : {}", response.id, response.schemaReference)
+        versionMap[type.name] = response.id
+    }
+
     @Bean
-    fun writerSchemaResolver(avroSchemaService: AvroSchemaService): SchemaResolver {
+    fun writerSchemaResolver(avroMapper: AvroMapper, schemaRegistryClient: SchemaRegistryClient): SchemaResolver {
         return SchemaResolver {
-            it.message.setHeader(AppRouteBuilder.APP_VERSION, version)
-            avroSchemaService.getSchema(version, Person::class.java)
+            val writerClassName = Person::class.java.name
+            val schema = versionMap[writerClassName]?.let { id ->
+                it.message.setHeader(AppRouteBuilder.SCHEMA_ID, id)
+                it.message.setHeader(AppRouteBuilder.SCHEMA_CLASS, writerClassName)
+                schemaRegistryClient.fetch(id)
+            }
+            AvroSchema(Schema.Parser().parse(schema))
         }
     }
 
     @Bean
-    fun readerSchemaResolver(avroSchemaService: AvroSchemaService): SchemaResolver {
+    fun readerSchemaResolver(avroMapper: AvroMapper, schemaRegistryClient: SchemaRegistryClient): SchemaResolver {
         return SchemaResolver {
-            val writerVersion = it.message.getHeader(AppRouteBuilder.APP_VERSION, String::class.java)
-            val writerSchema = avroSchemaService.getSchema(writerVersion, Person::class.java) // old writer schema
-            val readerSchema = avroSchemaService.getSchema(version, Person::class.java)
-            writerSchema.withReaderSchema(readerSchema)
+            val writerId = it.message.getHeader(AppRouteBuilder.SCHEMA_ID, Int::class.java)
+            val writerClassName = it.message.getHeader(AppRouteBuilder.SCHEMA_CLASS, String::class.java)
+            val writerSchema = schemaRegistryClient.fetch(writerId)
+            val readerSchema = versionMap[writerClassName]?.let { id -> schemaRegistryClient.fetch(id) }
+            AvroSchema(Schema.Parser().parse(writerSchema))
+                .withReaderSchema(AvroSchema(Schema.Parser().parse(readerSchema)))
         }
     }
 
