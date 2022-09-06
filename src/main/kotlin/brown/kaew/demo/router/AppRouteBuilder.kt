@@ -17,6 +17,7 @@ class AppRouteBuilder : RouteBuilder() {
         const val RABBIT_ROUTE =
             "spring-rabbitmq:brown.kaew?routingKey=brown.kaew.avro&queues=brown.kaew.avro.test&autoDeclare=true"
         const val APP_VERSION = "appVersion"
+        const val MSG_CLASS = "msgClass"
     }
 
     override fun configure() {

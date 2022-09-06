@@ -71,7 +71,8 @@ class AppConfig {
     fun writerSchemaResolver(avroSchemaService: AvroSchemaService): SchemaResolver {
         return SchemaResolver {
             it.message.setHeader(AppRouteBuilder.APP_VERSION, avroSchemaService.appVersion)
-            avroSchemaService.getWriterSchema(Person::class.java)
+            it.message.setHeader(AppRouteBuilder.MSG_CLASS, it.message.body.javaClass.name)
+            avroSchemaService.getWriterSchema(it.message.body.javaClass)
         }
     }
 
@@ -79,7 +80,8 @@ class AppConfig {
     fun readerSchemaResolver(avroSchemaService: AvroSchemaService): SchemaResolver {
         return SchemaResolver {
             val writerVersion = it.message.getHeader(AppRouteBuilder.APP_VERSION, String::class.java)
-            avroSchemaService.getReaderSchema(writerVersion, Person::class.java)
+            val messageClass = it.message.getHeader(AppRouteBuilder.MSG_CLASS, String::class.java)
+            avroSchemaService.getReaderSchema(writerVersion, Class.forName(messageClass))
         }
     }
 
