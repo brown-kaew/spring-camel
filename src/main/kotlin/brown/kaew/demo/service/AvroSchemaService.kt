@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
+import java.util.concurrent.TimeUnit
 
 @Service
 class AvroSchemaService(
@@ -20,9 +21,8 @@ class AvroSchemaService(
 
     val log: Logger = LoggerFactory.getLogger(this::class.java)
 
-    @Cacheable("avroSchema", key = "#type.name + ':' + #version")
     private fun <T> getSchema(version: String, type: Class<T>): AvroSchema {
-        val key = type.name + ":" + version
+        val key = "avro:" + type.name + ":" + version
         log.info("getSchema key : {}", key)
         val bucket = redissonClient.getBucket<String>(key)
         var schema = bucket.get()
@@ -31,7 +31,7 @@ class AvroSchemaService(
             //only manage version of this application
             val avroSchema = avroMapper.schemaFor(type)
             schema = avroSchema.avroSchema.toString()
-            if (bucket.trySet(schema)) { //store to redis
+            if (bucket.trySet(schema, 1, TimeUnit.DAYS)) { //store to redis
                 log.info("Store schema : {}", key)
             }
             return avroSchema
@@ -40,15 +40,17 @@ class AvroSchemaService(
         return AvroSchema(Schema.Parser().parse(schema))
     }
 
+    @Cacheable("avroSchema", key = "'writer:' + #type")
     fun <T> getWriterSchema(type: Class<T>): AvroSchema {
         return getSchema(appVersion, type)
     }
 
-    fun <T> getReaderSchema(originalVersion: String, type: Class<T>): AvroSchema {
-        return if (originalVersion == appVersion) {
-            getSchema(originalVersion, type)
+    @Cacheable("avroSchema", key = "'reader:' + #type + ':' + #writerVersion")
+    fun <T> getReaderSchema(writerVersion: String, type: Class<T>): AvroSchema {
+        return if (writerVersion == appVersion) {
+            getSchema(writerVersion, type)
         } else {
-            val writer = getSchema(originalVersion, type)
+            val writer = getSchema(writerVersion, type)
             val reader = getSchema(appVersion, type)
             writer.withReaderSchema(reader)
         }

@@ -9,7 +9,8 @@ data class Person(
     var favoriteNumber: Int?,
 //    @AvroDefault(value = "\"Mama\"")
     @JsonProperty(defaultValue = "\"Mama\"")
-    var favoriteFood: String? = "Pizza"
+    var favoriteFood: String? = "Pizza",
+    var pets: List<Pet> = arrayListOf(Pet("doggy"))
 ) {
     constructor() : this(null, null, null)
 }

@@ -1,11 +1,9 @@
 package brown.kaew.demo.config
 
-import brown.kaew.demo.model.Person
 import brown.kaew.demo.router.AppRouteBuilder
 import brown.kaew.demo.service.AvroSchemaService
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.avro.AvroMapper
-import com.fasterxml.jackson.dataformat.avro.schema.AvroSchemaGenerator
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.apache.camel.component.jackson.SchemaResolver
 import org.ehcache.config.CacheConfiguration
@@ -60,10 +58,7 @@ class AppConfig {
     @Bean
     fun avroMapper(): AvroMapper {
         val avroMapper = AvroMapper.builder().build()
-        val avroSchemaGenerator = AvroSchemaGenerator()
         avroMapper.registerKotlinModule()
-        avroMapper.acceptJsonFormatVisitor(Person::class.java, avroSchemaGenerator)
-        log.info("Schema\n{}", avroSchemaGenerator.avroSchema.toString(true))
         return avroMapper
     }
 
