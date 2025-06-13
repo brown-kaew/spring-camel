@@ -36,4 +36,12 @@ class V1Controller(
         log.info("Success")
         return "Success"
     }
+
+    @GetMapping("produce-myqueue")
+    fun produceMyQueue(@RequestParam message: String): String {
+        // http://localhost:8080/api/v1/produce-myqueue?message=hello
+        producerTemplate.sendBody(AppRouteBuilder.PRODUCE_MYQUEUE_ROUTE, message)
+        log.info("Produced to my-queue: $message")
+        return "Produced to my-queue: $message"
+    }
 }

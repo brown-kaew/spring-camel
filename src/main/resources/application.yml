@@ -16,19 +16,20 @@ spring:
     host: localhost
     timeout: 15s
     port: 6379
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    requested-heartbeat: 20
+    channel-rpc-timeout: 30000
+    publisher-confirm-type: simple
 
 camel:
   component:
-    rabbitmq:
-      hostname: localhost
-      port-number: 5672
-      username: guest
-      password: guest
-      vhost: /
-      skip-exchange-declare: true
-      auto-delete: false
-      guaranteed-deliveries: true
-      automatic-recovery-enabled: true
-      publisher-acknowledgements-timeout: 10000
-      requested-heartbeat: 20
-      channel-rpc-timeout: 30000
+    spring-rabbitmq:
+      auto-declare: false
+      test-connection-on-startup: true
+      message-listener-container-type: DMLC
+      maximum-retry-attempts: 0
